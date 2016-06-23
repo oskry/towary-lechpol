@@ -1,0 +1,90 @@
+<html>
+<head>
+<script src="jquery-1.7.2.min.js" type="text/javascript"></script>
+<script >
+	 var liczba_rekordow=0;
+	 var liczba_pobranych_rekordow=-1;
+	 var wielkosc_buforu = 50;
+	 
+	 
+	function jakiCzas() {
+		var now = new Date();
+		now = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds() + ': ';
+		return now;
+	}
+
+	function pobierzRekordy(i){
+	$.ajax({
+		type: "POST",
+		dataType: "text",
+		url: "process.php", 
+		data: {action: "add_records", od: i, bufor: wielkosc_buforu},
+		success: function(data){
+			 $("#dvContent").val( $("#dvContent").val() + jakiCzas() + '\n' + data.trim ()+ '\n\n');
+			
+			liczba_pobranych_rekordow=liczba_pobranych_rekordow+wielkosc_buforu;
+			$('#statystyki2').html("<b>Liczba za³adowanych produktów do PHP: "+(liczba_pobranych_rekordow+1)+'</b><br>');
+			if (liczba_pobranych_rekordow<liczba_rekordow){
+				pobierzRekordy(liczba_pobranych_rekordow)
+			}
+			else {
+				$('#statystyki2').html("<b>Liczba za³adowanych produktów do PHP: "+(liczba_rekordow)+'</b><br>');
+				alert("Zakoñczono Proces!")
+			}
+		},
+		error: function(){
+			alert("Nie mo¿na odczytaæ pliku process.php lub plik jest aktualnie przetwarzany przez inny proces.");
+		}				
+	});
+	}
+	
+	
+	function sprawdzRekordy(){
+		$.ajax({
+			type: "POST",
+			dataType: "text",
+			url: "process.php", 
+			data: {action: "get_record_count"},
+			success: function(data){
+				liczba_rekordow = data;
+				$('#statystyki1').html("<b>Liczba wsztstkich produktów w pliku XML: "+liczba_rekordow+'</b><br>');
+				$('#statystyki2').html("<b>Liczba za³adowanych produktów do PHP: "+(liczba_pobranych_rekordow+1)+'</b><br>');
+				$('#statystyki3').html("<b>Rozmiar buforu: "+(wielkosc_buforu)+'</b><br>');
+				$("#przycisk").remove();
+				pobierzRekordy(liczba_pobranych_rekordow)
+			},
+			error: function(){
+				alert("Nie mo¿na odczytaæ pliku process.php lub plik jest aktualnie przetwarzany przez inny proces.");
+			}				
+		});
+	}
+			
+	function pobierzPlikXML(){		
+		$.ajax({
+			type: "POST",
+			dataType: "text",
+			url: "process.php", 
+			data: {action: "download_file"},
+			success: function(data){
+				$("#dvContent").val( $("#dvContent").val() + jakiCzas()+data.trim ()+ '\n\n');
+				$("#przycisk").prop("disabled", (_, val) => !val);
+			},
+			error: function(){
+				alert("Nie mo¿na odczytaæ pliku process.php lub plik jest aktualnie przetwarzany przez inny proces.");
+			}				
+		});
+	}
+	pobierzPlikXML();
+</script>
+</head>
+<body>
+<div id="statystyki1"></div>
+<div id="statystyki2"></div>
+<div id="statystyki3"></div>
+<button id="przycisk" disabled type="button" onclick="sprawdzRekordy();">Rozpocznij proces!</button>
+<div>
+<b><br>Szczegó³y operacji:</b><br>
+	<textarea id="dvContent" readonly style="width:600px;height:600px;font-size: 10px;"></textarea>	
+</div>
+</body>
+</html>
